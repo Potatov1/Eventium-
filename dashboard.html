@@ -1,0 +1,451 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Eventium Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <style>
+    body { margin:0; font-family:sans-serif; background:#fff; }
+    .header{ display:flex; flex-direction:column; align-items:center; background:#f8f9fa; border-bottom:1.5px solid #e2e2e2; padding:16px 20px 10px 20px; }
+    .brand-row{ display:flex; align-items:center; width:100%; justify-content:space-between; }
+    .logo-img{ width:15vw; height:5vw;}
+    .brand{ font-size:1.31rem; font-weight:800; margin-left:10px; }
+    .header-actions button{ background:#fff; border:1.5px solid #222; border-radius:50%; width:38px; height:38px; margin-left:10px; cursor:pointer; }
+    .search-stack{ width:100%; max-width:530px; margin:15px auto 0 auto; display:flex; flex-direction:column; gap:6px; }
+    .search-bar{ display:flex; background:#fff; border:1.5px solid #222; border-radius:8px; overflow:hidden; align-items:center; }
+    .search-bar input{ border:none; outline:none; flex:1; padding:10px 16px; font-size:1rem; background:transparent; color:#222; }
+    .search-bar button{ background:#fff; border:none; border-left:1.5px solid #222; padding:0 18px; cursor:pointer; height:42px; color:#888; font-size:1.1rem; }
+    .main-wrap{ display:flex; min-height:calc(100vh - 100px); }
+    #map{ flex:2; min-width:0; min-height:70vh; }
+    .sidebar{ flex:1; max-width:400px; background:#f8f9fa; border-left:1.5px solid #e2e2e2; display:flex; flex-direction:column; }
+    .sidebar-nav{ display:flex; gap:10px; margin:20px 18px 0 18px; }
+    .sidebar-nav-btn{ flex:1; background:#fff; color:#222; border:1.5px solid #222; border-radius:7px; font-weight:600; font-size:1rem; padding:7px 0; cursor:pointer; transition:0.3s; }
+    .sidebar-nav-btn:hover{ background:#1a73e8; color:#fff; }
+    .sidebar-nav-btn.active{ background:#1a73e8; color:#fff; border-color:#1a73e8; }
+    .sidebar-section{ background:#f5f7fa; margin:18px; border-radius:14px; padding:18px; box-shadow:0 6px 22px rgba(0,0,0,0.07); border:1.5px solid #e2e2e2; }
+    .place-info{ font-size:1rem; color:#222; margin-bottom:7px; }
+    .events-list{ list-style:none; padding:0; margin:0; max-height:340px; overflow-y:auto; }
+    .event-item{ margin-bottom:13px; border-radius:10px; border:1.2px solid #d4d4d4; padding:11px; background:#fff; transition:0.3s; cursor:pointer; }
+    .event-item:hover{ transform:scale(1.02); box-shadow:0 3px 12px rgba(0,0,0,0.15); }
+    .event-title{ font-weight:600; font-size:1.05rem; }
+    .event-meta{ font-size:0.97rem; color:#444; }
+    .tag-badge{ display:inline-block; background:#e2eaff; color:#174ea6; border-radius:5px; padding:2px 8px; font-size:0.96rem; margin:2px 4px 0 0; }
+    .urgency-badge{ border-radius:5px; padding:2px 10px; font-size:12px; font-weight:bold; margin-right:8px; }
+    .urgency-high{ background:#fce8e6; color:#d93025; }
+    .urgency-medium{ background:#fff4e5; color:#e37400; }
+    .urgency-low{ background:#e6f4ea; color:#137333; }
+    .join-btn,.leave-btn{ background:#fff; border:1.5px solid #222; border-radius:7px; font-weight:600; font-size:1rem; padding:6px 15px; cursor:pointer; margin-top:6px; }
+    .join-btn:hover{ background:#1a73e8; color:#fff; border-color:#1a73e8; }
+    .leave-btn{ background:#d93025; color:#fff; border-color:#d93025; }
+    .leave-btn:hover{ background:#b71c1c; }
+    #useLocBtn{ position:absolute; top:20px; right:20px; z-index:1000; background:#fff; border:1.5px solid #222; border-radius:50%; width:48px; height:48px; font-size:1.4rem; box-shadow:0 2px 10px rgba(0,0,0,0.07); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .spam-event{ opacity:0.5; }
+    .danger-low{ border-left:5px solid #137333; }
+    .danger-medium{ border-left:5px solid #e37400; }
+    .danger-high{ border-left:5px solid #d93025; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="brand-row">
+      <div style="display:flex;align-items:center;">
+        <img class="logo-img" src="/static/logo.jpg" alt="Logo" />
+        <span class="brand">
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+      </div>
+      <div class="header-actions">
+        <button id="createEventBtn"><i class="fa-solid fa-plus"></i></button>
+        <button id="profileBtn"><i class="fa-solid fa-user"></i></button>
+      </div>
+    </div>
+    <div class="search-stack">
+      <form id="locForm" class="search-bar">
+        <input id="locInput" placeholder="Enter location (e.g. Connaught Place, Delhi)">
+        <button type="submit"><i class="fa-solid fa-location-dot"></i></button>
+      </form>
+      <form id="queryForm" class="search-bar">
+        <input id="queryInput" placeholder="Find places (e.g. pizza, cafe)">
+        <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+      </form>
+      <div style="margin-top:5px;">
+        <label for="placeRange">Radius:</label>
+        <select id="placeRange">
+          <option value="1000">1 km</option>
+          <option value="2000">2 km</option>
+          <option value="5000" selected>5 km</option>
+          <option value="10000">10 km</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-wrap">
+    <div style="position:relative; flex:2;">
+      <div id="map"></div>
+      <button id="useLocBtn" title="Use My Location"><i class="fa-solid fa-location-crosshairs"></i></button>
+    </div>
+    <aside class="sidebar">
+      <div class="sidebar-nav">
+        <button class="sidebar-nav-btn active" id="navNearby">Nearby Events</button>
+        <button class="sidebar-nav-btn" id="navJoined">Joined</button>
+        <button class="sidebar-nav-btn" id="navMine">Mine</button>
+      </div>
+      <div class="sidebar-section" id="placeInfo">
+        <h3>Place Info</h3>
+        <div id="placeDetails">Select a place or search.</div>
+      </div>
+      <div class="sidebar-section">
+        <h3 id="eventsSectionTitle">Nearby Events</h3>
+    <button id="filterBtn" style="margin-left:10px; padding:6px 12px; border:none; background:#007bff; color:white; border-radius:6px; cursor:pointer;">
+      <i class="fa-solid fa-filter"></i> Filter
+    </button>
+
+    <!-- Filter Modal -->
+    <div id="filterModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:2000;">
+      <div style="background:white; padding:20px; border-radius:10px; width:50vw; position:relative;">
+        <span id="closeModal" style="position:absolute; top:8px; right:12px; cursor:pointer; font-size:18px;">&times;</span>
+        <h3>Filter Events</h3>
+        <label>Type:</label>
+        <input type="text" id="filterType" placeholder="Enter type" style="width:90%; padding:6px; margin:6px 0;">
+        <label>Date:</label>
+        <input type="date" id="filterDate" style="width:90%; padding:6px; margin:6px 0;">
+        <label>Location:</label>
+        <input type="text" id="filterLocation" placeholder="Enter location" style="width:90%; padding:6px; margin:6px 0;">
+        <label>Category:</label>
+        <input type="text" id="filterCategory" placeholder="Enter category" style="width:90%; padding:6px; margin:6px 0;">
+        <button id="applyFilter" style="margin-top:10px; padding:8px 14px; background:#28a745; color:white; border:none; border-radius:6px; cursor:pointer;">Apply</button>
+      </div>
+    </div>
+
+    <script>
+      const filterBtn = document.getElementById("filterBtn");
+      const filterModal = document.getElementById("filterModal");
+      const closeModal = document.getElementById("closeModal");
+      const applyFilter = document.getElementById("applyFilter");
+
+      filterBtn.onclick = () => filterModal.style.display = "flex";
+      closeModal.onclick = () => filterModal.style.display = "none";
+      window.onclick = (e) => { if (e.target == filterModal) filterModal.style.display = "none"; }
+
+      applyFilter.onclick = async () => {
+        const type = document.getElementById("filterType").value;
+        const date = document.getElementById("filterDate").value;
+        const location = document.getElementById("filterLocation").value;
+        const category = document.getElementById("filterCategory").value; // Get category value
+
+        let url = `${API_BASE}/filter_events?`; // Use API_BASE here
+        if(type) url += `type=${encodeURIComponent(type)}&`;
+        if(date) url += `date=${encodeURIComponent(date)}&`;
+        if(location) url += `location=${encodeURIComponent(location)}&`;
+        if(category) url += `category=${encodeURIComponent(category)}&`; // Add category to URL
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const list = document.querySelector(".events-list");
+        list.innerHTML = "";
+        if(data.events.length === 0) {
+          list.innerHTML = "<li>No events found</li>";
+        } else {
+          data.events.forEach(ev => {
+            const li = document.createElement("li");
+    li.className = "event-item";
+    li.className = "event-item";
+            // Correctly display date_time and venue_address from the backend response
+            li.innerHTML = `<div class="event-title"><a href="./event_preview.html?id=${ev.event_id}" style="text-decoration:none;color:inherit;">${ev.title}</a></div>
+                            <div class="event-meta">${new Date(ev.date_time).toLocaleString()} - ${ev.venue_address}</div>
+                            <div>${ev.description}</div>
+                            ${ev.venue_category ? `<div>Category: ${ev.venue_category}</div>` : ''}`; // Display category
+            // Make filter result items clickable too
+            li.addEventListener('click', (evnt) => {
+              const a = li.querySelector('a[href*="event_preview.html"]');
+              if (evnt.target.closest('a') || !a) return;
+              window.location.href = a.getAttribute('href');
+            });
+            list.appendChild(li);
+          });
+        }
+        filterModal.style.display = "none";
+      }
+    </script>
+    
+        <ul class="events-list" id="eventsList">
+          <li style="color:#888;">No events.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+
+    // ====== Auth Utils ======
+    const getToken = () => localStorage.getItem("token");
+    const getUserId = () => localStorage.getItem("user_id");
+    const authHeaders = () => { const t = getToken(); return t ? { "Authorization": "Bearer " + t } : {}; }
+
+    let center = { lat:28.6139, lon:77.2090 };
+    let currentTab = "nearby";
+    const map = L.map('map').setView([center.lat, center.lon], 13);
+    const markers = L.layerGroup().addTo(map);
+    const eventMarkers = L.layerGroup().addTo(map); // NEW for events
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+
+    function dropMarker(lat, lon, label="Selected location"){
+      markers.clearLayers();
+      L.marker([lat,lon]).addTo(markers).bindPopup(label).openPopup();
+      map.setView([lat,lon],15);
+    }
+
+    function showPlaceInfo({name,addr,cat,lat,lon}){
+      document.getElementById('placeDetails').innerHTML=`
+        <strong>${name}</strong><br>
+        <span style="color:#666;">${addr||""}</span><br>
+        ${cat?`<span>${cat}</span><br>`:""}
+        <span style="font-size:0.9rem;color:#888;">Lat:${lat.toFixed(5)}, Lon:${lon.toFixed(5)}</span>`;
+      center={lat,lon};
+      refreshCurrentTab();
+      plotEvents(lat, lon); // Load events visually
+    }
+
+    function refreshCurrentTab(){
+      if(currentTab==="nearby") loadNearbyEvents(center.lat,center.lon);
+      else if(currentTab==="joined") loadJoinedEvents();
+      else if(currentTab==="mine") loadMyEvents();
+    }
+
+    // ====== Plot events on map ======
+    async function plotEvents(lat, lon) {
+      try {
+        const radKm = parseInt(document.getElementById("placeRange").value,10)/1000;
+        const events = await fetch(`${API_BASE}/search_events?lat=${lat}&lon=${lon}&radius_km=${radKm}`).then(r=>r.json());
+        eventMarkers.clearLayers();
+        events.forEach(ev=>{
+          if(ev.venue_lat && ev.venue_lon){
+            const marker = L.marker([ev.venue_lat, ev.venue_lon], {icon: L.icon({
+              iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+              iconSize: [30, 30],
+              iconAnchor: [15, 30],
+              popupAnchor: [0, -28]
+            })});
+            marker.bindPopup(`
+              <b>${ev.title}</b><br>
+              ${ev.venue_name||""}<br>
+              ${ev.venue_address||""}<br>
+              <i>${new Date(ev.date_time).toLocaleString()}</i>
+            `);
+            marker.addTo(eventMarkers);
+          }
+        });
+      } catch(e) { console.error("Error plotting events:", e); }
+    }
+
+    // ====== Geolocation ======
+    document.getElementById('useLocBtn').onclick = ()=>{
+      if(!navigator.geolocation) return alert("Geolocation not supported");
+      navigator.geolocation.getCurrentPosition(pos=>{
+        const {latitude,longitude}=pos.coords;
+        dropMarker(latitude,longitude,"You are here");
+        showPlaceInfo({name:"My Location",addr:"",cat:"",lat:latitude,lon:longitude});
+      });
+    };
+
+    map.on('click',e=>{
+      dropMarker(e.latlng.lat,e.latlng.lng,"Custom location");
+      showPlaceInfo({name:"Custom Location",addr:"",cat:"",lat:e.latlng.lat,lon:e.latlng.lng});
+    });
+
+    // ====== Event Tabs ======
+    function setActiveTab(id,tab){ 
+      document.querySelectorAll(".sidebar-nav-btn").forEach(b=>b.classList.remove("active")); 
+      document.getElementById(id).classList.add("active"); 
+      currentTab=tab; refreshCurrentTab();
+    }
+    document.getElementById("navNearby").onclick = ()=> setActiveTab("navNearby","nearby");
+    document.getElementById("navJoined").onclick = ()=> setActiveTab("navJoined","joined");
+    document.getElementById("navMine").onclick = ()=> setActiveTab("navMine","mine");
+
+    // ====== Event Actions ======
+    async function loadNearbyEvents(lat,lon){ try{
+      const radKm=parseInt(document.getElementById("placeRange").value,10)/1000;
+      const data = await fetch(`${API_BASE}/search_events?lat=${lat}&lon=${lon}&radius_km=${radKm}`).then(r=>r.json());
+      showSidebarEvents("nearby",data);
+      plotEvents(lat,lon); // Keep markers synced
+    } catch(e){ console.error(e); showSidebarEvents("nearby",[]); } }
+
+    // Update the loadJoinedEvents function
+async function loadJoinedEvents(){ try{
+  const uid=getUserId(); 
+  if(!uid){ showSidebarEvents("joined",[]); return; }
+  if(!getToken()){ showSidebarEvents("joined",[]); return; }
+  const data = await fetch(`${API_BASE}/joined_events/${uid}`,{headers:authHeaders()}).then(r=>{
+    if(!r.ok) throw new Error(`HTTP error ${r.status}`);
+    return r.json();
+  });
+  showSidebarEvents("joined",data);
+} catch(e){ 
+  console.error("Error loading joined events:", e); 
+  showSidebarEvents("joined",[]); 
+} }
+
+// Update the loadMyEvents function
+async function loadMyEvents(){ try{
+  const uid=getUserId(); 
+  if(!uid){ showSidebarEvents("mine",[]); return; }
+  if(!getToken()){ showSidebarEvents("mine",[]); return; }
+  const data = await fetch(`${API_BASE}/created_events/${uid}`,{headers:authHeaders()}).then(r=>{
+    if(!r.ok) throw new Error(`HTTP error ${r.status}`);
+    return r.json();
+  });
+  showSidebarEvents("mine",data);
+} catch(e){ 
+  console.error("Error loading my events:", e); 
+  showSidebarEvents("mine",[]); 
+} }
+
+// Update the showSidebarEvents function to handle all event types
+function showSidebarEvents(type, events) {
+  const title = type === "joined" ? "Joined Events" : type === "mine" ? "My Events" : "Nearby Events";
+  document.getElementById("eventsSectionTitle").textContent = title;
+  const el = document.getElementById("eventsList"); 
+  el.innerHTML = "";
+  
+  if (!events || !events.length) { 
+    const _hasToken = !!getToken();
+    const _msg = (!_hasToken && (type==='joined' || type==='mine')) ? 'Sign in to see your events.' : 'No events.';
+    el.innerHTML = `<li style='color:#888;'>${_msg}</li>`; 
+    return; 
+  }
+  
+  events.forEach(ev => {
+    let dangerClass = ev.danger_rating >= 7 ? "danger-high" : ev.danger_rating >= 4 ? "danger-medium" : "danger-low";
+    const spamClass = ev.is_spam ? "spam-event" : "";
+    const li = document.createElement("li");
+    li.className = "event-item";
+    li.className = `event-item ${dangerClass} ${spamClass}`;
+    
+    // Format tags
+    const tagsHtml = (ev.tags || "").split(",")
+      .filter(t => t.trim())
+      .map(t => `<span class="tag-badge">${t.trim()}</span>`)
+      .join("");
+    
+    li.innerHTML = `
+      <div><span class="event-title"><a href="./event_preview.html?id=${ev.event_id}" style="text-decoration:none;color:inherit;">${ev.title}</a></span></div>
+      <div class="event-meta">${ev.venue_name || ""}</div>
+      <div class="event-meta">${new Date(ev.date_time).toLocaleString()}</div>
+      ${ev.description ? `<div>${ev.description}</div>` : ""}
+      ${tagsHtml}
+      ${type === "nearby" ? `<div><button class="join-btn" onclick="event.stopPropagation(); joinEvent('${ev.event_id}')">Join</button></div>` :
+        type === "joined" ? `<div><button class="leave-btn" onclick="event.stopPropagation(); leaveEvent('${ev.event_id}')">Leave</button></div>` : ""}
+    `;
+    // Make entire card clickable (except on join/leave buttons or anchor)
+    li.addEventListener('click', (evnt) => {
+      if (evnt.target.closest('.join-btn') || evnt.target.closest('.leave-btn') || evnt.target.closest('a')) return;
+      window.location.href = './event_preview.html?id=' + (ev.event_id || '');
+    });
+    el.appendChild(li);
+  });
+}
+
+    async function joinEvent(eid){ try{
+      const uid=getUserId(); if(!uid) return alert("Login required");
+      const res=await fetch(`${API_BASE}/enroll/${eid}?user_id=${uid}`,{method:"POST",headers:authHeaders()});
+      if(res.ok) refreshCurrentTab();
+      else res.json().then(d=>alert(d.detail||"Failed"));
+    } catch(e){console.error(e);} }
+
+    async function leaveEvent(eid){ try{
+      const uid=getUserId(); if(!uid) return alert("Login required");
+      const res=await fetch(`${API_BASE}/unenroll/${eid}?user_id=${uid}`,{method:"DELETE",headers:authHeaders()});
+      if(res.ok) refreshCurrentTab();
+      else res.json().then(d=>alert(d.detail||"Failed"));
+    } catch(e){console.error(e);} }
+
+    // ====== Search ======
+    document.getElementById("locForm").onsubmit=async e=>{ e.preventDefault();
+      const q=document.getElementById("locInput").value.trim(); if(!q) return;
+      try{
+        const res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`).then(r=>r.json());
+        if(!res.length) return; const lat=parseFloat(res[0].lat), lon=parseFloat(res[0].lon);
+        dropMarker(lat,lon,"Search location"); showPlaceInfo({name:q,addr:"",cat:"",lat,lon});
+      } catch(e){console.error(e);}
+    };
+
+    document.getElementById("queryForm").onsubmit=e=>{ e.preventDefault();
+      const q=document.getElementById("queryInput").value.trim()||"cafe";
+      searchPlacesAndShow(q,center.lat,center.lon,parseInt(document.getElementById("placeRange").value,10));
+    };
+    document.getElementById("placeRange").onchange=()=>{ 
+      const q=document.getElementById("queryInput").value.trim()||"cafe";
+      searchPlacesAndShow(q,center.lat,center.lon,parseInt(document.getElementById("placeRange").value,10));
+      plotEvents(center.lat, center.lon);
+    };
+
+    // ====== Navigation ======
+    document.getElementById("createEventBtn").onclick = ()=>window.location.href="create_event.html";
+    document.getElementById("profileBtn").onclick = ()=>window.location.href="profile.html";
+
+    // ====== Foursquare Search ======
+async function searchPlacesAndShow(query, lat, lon, radius) {
+  try {
+    const res = await fetch(`${API_BASE}/fsq_search?query=${encodeURIComponent(query)}&lat=${lat}&lon=${lon}&radius=${radius}`);
+    const data = await res.json();
+
+    // Clear previous markers
+    markers.clearLayers();
+
+    if (data.results?.length) {
+      data.results.forEach(place => {
+        const plat = place.latitude;
+        const plon = place.longitude;
+        if (!plat || !plon) return;
+
+        const popupText = `<strong>${place.name}</strong><br>${place.location?.formatted_address || ""}`;
+        const marker = L.marker([plat, plon]).bindPopup(popupText);
+        marker.addTo(markers);  // Add to global markers layer
+      });
+
+      // Fit map to markers if any
+      if (markers.getLayers().length) {
+        map.fitBounds(markers.getBounds(), { padding: [50, 50] });
+      }
+    }
+  } catch (e) {
+    console.error("FSQ search error:", e);
+  }
+}
+
+// ====== Initial Search & Events ======
+searchPlacesAndShow("cafe", center.lat, center.lon, 5000);
+plotEvents(center.lat, center.lon);
+</script>
+
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      document.querySelectorAll('.event-card').forEach(function(card){
+        const url = card.getAttribute('data-href');
+        if (url){
+          card.style.cursor = 'pointer';
+          card.addEventListener('click', function(e){
+            // Avoid clicks from interactive children
+            if (e.target.closest('.join-btn, .leave-btn, a, button, input, select, textarea')) return;
+            window.location.href = url;
+          });
+        }
+      });
+      // Ensure join/leave don't bubble
+      document.querySelectorAll('.join-btn, .leave-btn').forEach(function(btn){
+        btn.addEventListener('click', function(e){ e.stopPropagation(); });
+      });
+    });
+    </script>
+    
+</body>
+</html>

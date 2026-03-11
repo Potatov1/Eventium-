@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eventium - Sign In</title>
+  <style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #202124;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  padding: 48px 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.logo {
+  display: block;
+  margin: 0 auto 20px;
+  max-width: 180px;
+  width: 50%;
+  height: 6vw;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 15px;
+  color: #5f6368;
+  margin-bottom: 32px;
+}
+
+.tabs {
+  display: flex;
+  margin-bottom: 32px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tab {
+  flex: 1;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #5f6368;
+  transition: color 0.2s;
+  position: relative;
+}
+
+.tab.active { color: #1a73e8; }
+.tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: #1a73e8;
+}
+
+.form { display: none; }
+.form.active { display: block; }
+.form-group { margin-bottom: 22px; }
+
+.form-label {
+  font-size: 14px;
+  margin-bottom: 6px;
+  display: block;
+  font-weight: 500;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-input:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26,115,232,0.15);
+  outline: none;
+}
+
+.btn {
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.btn-primary { background: #1a73e8; color: #fff; }
+.btn-primary:hover { background: #1664c4; }
+.btn-secondary { background: #34a853; color: #fff; }
+.btn-secondary:hover { background: #2c8a45; }
+
+.message {
+  font-size: 14px;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  display: none;
+}
+.message.success {
+  background: #e6f4ea;
+  color: #137333;
+  border: 1px solid #ceead6;
+}
+.message.error {
+  background: #fce8e6;
+  color: #d93025;
+  border: 1px solid #f9dedc;
+}
+
+.footer-links {
+  margin-top: 36px;
+  text-align: center;
+  font-size: 13px;
+}
+.footer-links a {
+  margin: 0 10px;
+  color: #1a73e8;
+  text-decoration: none;
+}
+.footer-links a:hover { text-decoration: underline; }
+
+/* 📱 Mobile */
+@media (max-width: 480px) {
+  .auth-container {
+    padding: 32px 24px;
+    max-width: 90%;
+  }
+  .logo {
+    max-width: 120px;
+    width: 50%;
+  }
+  .tab { font-size: 14px; padding: 12px; }
+  .form-input { font-size: 14px; padding: 10px 12px; }
+  .btn { font-size: 14px; padding: 10px 16px; }
+}
+
+/* 💻 Tablets */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .auth-container {
+    max-width: 500px;
+    padding: 56px 48px;
+  }
+  .logo { max-width: 180px; }
+}
+
+/* 🖥️ Large Screens */
+@media (min-width: 1200px) {
+  .auth-container {
+    max-width: 420px;
+  }
+}
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div>
+      <img class="logo" src="logo.jpg" alt="Eventium Logo" />
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('signin', event)">Sign In</button>
+      <button class="tab" onclick="switchTab('signup', event)">Sign Up</button>
+    </div>
+
+    <!-- Sign In -->
+    <form class="form active" id="signinForm">
+      <div class="message error" id="signinError">Please fill all fields</div>
+      <div class="form-group">
+        <label class="form-label" for="signinUsername">Username</label>
+        <input type="text" id="signinUsername" class="form-input" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="signinPassword">Password</label>
+        <input type="password" id="signinPassword" class="form-input" required>
+      </div>
+      <button class="btn btn-primary" type="submit">Sign In</button>
+    </form>
+
+    <!-- Sign Up -->
+    <form class="form" id="signupForm">
+      <div class="message error" id="signupError">Please fill all fields</div>
+      <div class="message success" id="signupSuccess">Account created! Please sign in.</div>
+      <div class="form-group">
+        <label class="form-label" for="signupUsername">Username</label>
+        <input type="text" id="signupUsername" class="form-input" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="signupPassword">Password</label>
+        <input type="password" id="signupPassword" class="form-input" required>
+      </div>
+      <button class="btn btn-secondary" type="submit">Create Account</button>
+    </form>
+
+    <div class="footer-links">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000"; // change if backend is deployed
+
+    function switchTab(tab, e) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      e.target.classList.add('active');
+      document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+      document.getElementById(tab + 'Form').classList.add('active');
+      document.querySelectorAll('.message').forEach(m => m.style.display = 'none');
+    }
+
+    // ---- SIGN IN ----
+    document.getElementById('signinForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const u = document.getElementById('signinUsername').value.trim();
+      const p = document.getElementById('signinPassword').value.trim();
+
+      if (!u || !p) {
+        document.getElementById('signinError').style.display = 'block';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: u, password: p })
+        });
+
+        if (!res.ok) throw new Error("Login failed");
+        const data = await res.json();
+
+        // Store both individual values AND full user object
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user_id", data.user_id);
+        localStorage.setItem("username", data.username);
+        localStorage.setItem("eventiumUser", JSON.stringify(data));
+        
+        window.location.href = "dashboard.html"; // redirect to dashboard
+      } catch (err) {
+        document.getElementById('signinError').textContent = "Invalid credentials";
+        document.getElementById('signinError').style.display = 'block';
+      }
+    });
+
+    // ---- SIGN UP ----
+    document.getElementById('signupForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const u = document.getElementById('signupUsername').value.trim();
+      const p = document.getElementById('signupPassword').value.trim();
+
+      if (!u || !p) {
+        document.getElementById('signupError').style.display = 'block';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/signup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: u, password: p })
+        });
+
+        if (!res.ok) throw new Error("Signup failed");
+
+        document.getElementById('signupSuccess').style.display = 'block';
+        setTimeout(() => switchTab('signin', {target: document.querySelector('.tab')}), 1500);
+      } catch (err) {
+        document.getElementById('signupError').textContent = "Username already exists";
+        document.getElementById('signupError').style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

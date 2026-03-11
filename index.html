@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Eventium — Discover. Create. Join.</title>
+
+  <!-- Google Font + FontAwesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #0b0f14;
+      --panel: #121822;
+      --muted: #9aa5b1;
+      --text: #e6edf3;
+      --primary: #ff6b35;
+      --primary-2: #ff944d;
+      --card: #182235;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body { height:100%; }
+    body{
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      overflow-x:hidden;
+    }
+
+    /* NAV */
+    .nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1200;
+      background: rgba(11,15,20,0.65);
+      backdrop-filter: blur(8px) saturate(120%);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display:flex;
+      align-items:center;
+      gap: 18px;
+      padding: 12px 20px;
+    }
+
+    .left {
+      display:flex;
+      align-items:center;
+      gap:14px;
+      min-width:0;
+    }
+
+    .logo-img {
+      height: 40px;
+      width: auto;
+      display:block;
+      border-radius:8px;
+      background: white; /* ensures the logo reads well on dark background */
+      padding:4px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+      flex-shrink:0;
+    }
+
+    .brand {
+      font-weight:800;
+      font-size:1.05rem;
+      letter-spacing:0.2px;
+      color: white;
+      white-space:nowrap;
+    }
+
+    .nav-links {
+      display:flex;
+      gap:18px;
+      margin-left:16px;
+      align-items:center;
+      flex-wrap:wrap;
+      overflow:hidden;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration:none;
+      font-weight:600;
+      padding:8px 6px;
+      border-radius:8px;
+      transition: color .15s, background .15s;
+    }
+    .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+
+    .login {
+      margin-left:auto; /* push to right */
+      text-decoration:none;
+      padding:10px 14px;
+      border-radius:10px;
+      font-weight:700;
+      color:#071220;
+      background: linear-gradient(135deg,var(--primary),var(--primary-2));
+      box-shadow:0 10px 30px rgba(255,107,53,0.26);
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      white-space:nowrap;
+    }
+    .login:hover { transform: translateY(-2px); box-shadow:0 14px 36px rgba(255,107,53,0.32); }
+
+    /* HERO */
+    .hero {
+      position:relative;
+      height: calc(100svh - 0px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      overflow:hidden;
+      padding-top:74px; /* nav height space */
+    }
+
+    /* decorative radial gradient behind globe */
+    .hero::before {
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(900px 420px at 80% -10%, #1a2740 0%, transparent 50%),
+        radial-gradient(700px 380px at 20% 110%, #172233 0%, transparent 50%),
+        linear-gradient(180deg,#071019 0%, #0b0f14 100%);
+      z-index:0;
+    }
+
+    #globeWrap {
+      position:absolute;
+      inset:0;
+      z-index:0;
+      pointer-events:none;
+    }
+    /* canvas sized and positioned */
+    #globeCanvas {
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      display:block;
+      opacity: 0.98;
+      transform-origin:center center;
+    }
+
+    .overlay {
+      position:relative;
+      z-index:2;
+      max-width:860px;
+      padding: 6px 20px;
+    }
+    .overlay h1 {
+      font-size:clamp(2rem,6vw,3.6rem);
+      line-height:1.04;
+      margin-bottom:14px;
+      font-weight:800;
+      text-shadow: 0 8px 28px rgba(0,0,0,0.48);
+    }
+    .overlay p {
+      color: #c8d0d8;
+      font-size:clamp(1rem,2.4vw,1.18rem);
+      margin-bottom:20px;
+    }
+    .cta {
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:12px 20px;
+      background:linear-gradient(135deg,var(--primary),var(--primary-2));
+      color:#071018;
+      font-weight:800;
+      border-radius:12px;
+      text-decoration:none;
+      box-shadow: 0 10px 34px rgba(255,107,53,0.28);
+      transition: transform .12s, box-shadow .12s;
+    }
+    .cta:hover { transform: translateY(-2px); box-shadow: 0 16px 44px rgba(255,107,53,0.34); }
+
+    /* FEATURES SECTION */
+    .section {
+      padding:72px 18px;
+      background:var(--panel);
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .container { max-width:1200px; margin:0 auto; }
+    .section h2 {
+      font-size: clamp(1.4rem, 3vw, 2.1rem);
+      font-weight:800;
+      margin-bottom:6px;
+      background: linear-gradient(135deg,#fff,#cfe0ff);
+      -webkit-background-clip:text; background-clip:text; color: transparent; -webkit-text-fill-color:transparent;
+    }
+    .lead { color:#b6c0cc; max-width:760px; margin-bottom:18px; }
+
+    .grid {
+      display:grid;
+      grid-template-columns:repeat(12,1fr);
+      gap:18px;
+      margin-top:20px;
+    }
+    .card {
+      grid-column: span 12;
+      background: var(--card);
+      border:1px solid rgba(255,255,255,0.04);
+      padding:20px;
+      border-radius:14px;
+      box-shadow:0 10px 34px rgba(0,0,0,0.3);
+      transition: transform .16s, box-shadow .16s, border-color .16s;
+    }
+    .card:hover { transform: translateY(-6px); box-shadow:0 20px 52px rgba(0,0,0,0.36); border-color: rgba(255,255,255,0.08); }
+
+    .icon {
+      width:48px; height:48px; display:grid; place-items:center;
+      border-radius:10px; margin-bottom:12px;
+      background: linear-gradient(135deg,#1f2b44,#243457);
+      color:#9ec5ff; font-size:18px;
+    }
+    .card h3 { font-size:1.05rem; margin-bottom:8px; font-weight:800; }
+    .card p { color:#b6c0cc; line-height:1.5; font-size:0.98rem; }
+
+    @media(min-width:700px){ .card { grid-column: span 6; } }
+    @media(min-width:1024px){ .card { grid-column: span 3; } }
+
+    /* ABOUT */
+    .about { background:#0f1622; border-top:1px solid rgba(255,255,255,0.04); padding-bottom:58px; }
+
+    .about .blurb { color:#b9c3cf; max-width:880px; }
+
+    /* FOOTER */
+    footer {
+      background: #061018;
+      color:#93a0ae;
+      padding:28px 18px;
+      text-align:center;
+      border-top:1px solid rgba(255,255,255,0.04);
+    }
+
+    /* small screens adjustments */
+    @media(max-width:600px){
+      .nav-inner { padding:10px 14px; }
+      .logo-img { height:34px; padding:3px; }
+      .login { padding:8px 10px; font-size:0.95rem; }
+      .overlay h1 { font-size: 2rem; }
+      .card { padding:16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="nav" role="navigation" aria-label="Main nav">
+    <div class="nav-inner">
+      <div class="left" style="min-width:0">
+        <!-- Embedded logo is included below as a data URI (your uploaded image) -->
+       
+        <div class="brand" aria-hidden="true">Eventium</div>
+
+        <div class="nav-links" role="menubar" aria-label="Primary">
+          <a href="#about" role="menuitem">About</a>
+        </div>
+      </div>
+
+      <a class="login" href="/static/signin.html" role="button"><i class="fa-solid fa-right-to-bracket"></i> Get Started</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <main>
+    <section class="hero" id="home" aria-label="Hero">
+      <div id="globeWrap">
+        <canvas id="globeCanvas" aria-hidden="true"></canvas>
+      </div>
+
+      <div class="overlay" role="region" aria-labelledby="hero-heading">
+        <h1 id="hero-heading">Discover. Create. Join.</h1>
+        <p>Find amazing places near you, create unforgettable events, and connect with your local community.</p>
+        <a class="cta" href="#features"><i class="fa-solid fa-location-dot"></i> Start Exploring</a>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="section" id="features" aria-labelledby="features-heading">
+      <div class="container">
+        <h2 id="features-heading">Everything You Need</h2>
+        <p class="lead">Discover local hotspots, plan amazing events, and build connections in your community.</p>
+
+        <div class="grid" role="list">
+          <div class="card" role="listitem">
+            <div class="icon"><i class="fa-solid fa-map-location-dot"></i></div>
+            <h3>Discover Places</h3>
+            <p>Explore hidden gems,search results will take you a journey of discovery.</p>
+          </div>
+
+          <div class="card" role="listitem">
+            <div class="icon"><i class="fa-solid fa-calendar-plus"></i></div>
+            <h3>Create Events</h3>
+            <p>Plan and host meetups, concerts, workshops, or parties. Share details, manage RSVPs, and keep things organized.</p>
+          </div>
+
+          <div class="card" role="listitem">
+            <div class="icon"><i class="fa-solid fa-users"></i></div>
+            <h3>Join Community</h3>
+            <p>Connect with like-minded people in your area, form groups, and build long-lasting connections.</p>
+          </div>
+
+          <div class="card" role="listitem">
+            <div class="icon"><i class="fa-solid fa-bolt"></i></div>
+            <h3>Fast & Simple</h3>
+            <p>Create events quickly with a streamlined flow and a friendly interface for hosts and attendees.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="section about" id="about" aria-labelledby="about-heading">
+      <div class="container">
+        <h2 id="about-heading">About Eventium</h2>
+        <p class="blurb">
+          Eventium is a location-first platform that helps people discover great places and meaningful events around them.
+          Our mission is to turn nearby opportunities into real connections — quickly, safely, and delightfully.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer aria-label="Footer">
+    &copy; 2025 Eventium. All rights reserved. Built for HackerEarth Hackathon.
+  </footer>
+
+  <!-- Three.js & Three-Globe (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three-globe@2.30.0/dist/three-globe.min.js"></script>
+
+  <script>
+const API_BASE = "http://127.0.0.1:8000";
+
+  /***** Insert the user's logo data URI into the img src (safe fallback if script blocked) *****/
+  (function insertLogo(){
+    // Replace this block with the base64 data embedded below (will be inserted by assistant)
+    const logoImg = document.getElementById('logoDataURI');
+    // The assistant will set logoImg.src to the embedded data URI below:
+  })();
+  </script>
+
+  <script>
+  // --- 3D Globe Setup ---
+  (function(){
+    const hero = document.querySelector('.hero');
+    const canvas = document.getElementById('globeCanvas');
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    function resize() {
+      const w = hero.clientWidth;
+      const h = hero.clientHeight;
+      renderer.setSize(w, h, false);
+      if (camera) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+    }
+
+    // Scene & camera
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, hero.clientWidth / hero.clientHeight, 0.1, 2000);
+    camera.position.z = 350;
+
+    // Lights
+    const ambient = new THREE.AmbientLight(0xffffff, 1.0);
+    scene.add(ambient);
+    const dir = new THREE.DirectionalLight(0xffffff, 0.6);
+    dir.position.set(200,200,200);
+    scene.add(dir);
+
+    // Globe
+    const globe = new ThreeGlobe()
+      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg')
+      .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png');
+
+    scene.add(globe);
+
+    // Idle rotation and render
+    function animate(){
+      requestAnimationFrame(animate);
+      globe.rotation.y += 0.002;
+      renderer.render(scene, camera);
+    }
+
+    // Start
+    resize();
+    animate();
+    window.addEventListener('resize', resize);
+  })();
+  </script>
+</body>
+</html>

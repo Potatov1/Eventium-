@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Create Event</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+<header class="bg-white shadow flex items-center justify-between px-6" style="height: 6vw;">
+    <img src="/static/logo.png" alt="Logo" style="width: 12vw; height: 100%; object-fit: contain;">
+    <button onclick="window.location.href='dashboard.html'" 
+            class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
+        Exit
+    </button>
+</header>
+
+<main class="flex-1 flex items-center justify-center py-10">
+    <div class="bg-white shadow-lg rounded-2xl p-8 w-full max-w-2xl">
+        <h1 class="text-2xl font-bold mb-6 text-center">Create Event</h1>
+
+        <form id="eventForm" class="space-y-4">
+            <div>
+                <label class="block font-semibold mb-1">Title*</label>
+                <input type="text" name="title" required
+                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+            </div>
+
+            <div>
+                <label class="block font-semibold mb-1">Description</label>
+                <textarea name="description" rows="4"
+                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>
+            </div>
+
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <label class="block font-semibold mb-1">Type*</label>
+                    <select name="type" required
+                        class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="">Select type</option>
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                    </select>
+                </div>
+
+                <div class="flex-1">
+                    <label class="block font-semibold mb-1">Date & Time*</label>
+                    <input type="datetime-local" name="date_time" required
+                        class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-semibold mb-1">Capacity</label>
+                <input type="number" name="capacity" min="1"
+                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+            </div>
+
+            <div>
+                <label class="block font-semibold mb-1">Venue Name*</label>
+                <input type="text" name="venue_name" required
+                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+            </div>
+
+            <div>
+                <label class="block font-semibold mb-1">Venue Address*</label>
+                <input type="text" name="venue_address" required
+                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+            </div>
+
+            <div>
+                <label class="block font-semibold mb-1">Category</label>
+                <input type="text" name="venue_category"
+                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+            </div>
+
+            <!-- Image Uploader -->
+            <div>
+                <label class="block font-semibold mb-1">Event Image</label>
+                <div class="flex items-center space-x-2">
+                    <input type="file" id="eventImageUpload" accept="image/*" class="hidden">
+                    <label for="eventImageUpload" class="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg flex items-center space-x-2">
+                        <i class="fas fa-upload"></i>
+                        <span>Upload Image</span>
+                    </label>
+                    <span id="fileName" class="text-gray-600">No file chosen</span>
+                </div>
+            </div>
+
+            <button type="submit" 
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg mt-4">
+                Create Event
+            </button>
+
+            <p id="message" class="mt-4 text-center font-semibold"></p>
+        </form>
+    </div>
+</main>
+
+<script>
+const API_BASE = "http://127.0.0.1:8000";
+
+function getAuthToken() {
+    let token = localStorage.getItem("token");
+    if (!token) {
+        const userDataStr = localStorage.getItem("eventiumUser");
+        if (userDataStr) {
+            try {
+                const userData = JSON.parse(userDataStr);
+                token = userData.token;
+            } catch (e) {
+                console.error("Error parsing user data:", e);
+            }
+        }
+    }
+    return token;
+}
+
+document.getElementById('eventImageUpload').addEventListener('change', function() {
+    const fileNameDisplay = document.getElementById('fileName');
+    if (this.files && this.files.length > 0) {
+        fileNameDisplay.textContent = this.files[0].name;
+    } else {
+        fileNameDisplay.textContent = 'No file chosen';
+    }
+});
+
+
+document.getElementById("eventForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const messageEl = document.getElementById("message");
+    messageEl.textContent = "";
+    messageEl.className = "mt-4 text-center font-semibold";
+
+    const token = getAuthToken();
+    if (!token) {
+        messageEl.textContent = "Missing authentication token. Please login first.";
+        messageEl.classList.add("text-red-600");
+        setTimeout(() => {
+            window.location.href = 'signin.html';
+        }, 2000);
+        return;
+    }
+
+    const data = Object.fromEntries(new FormData(form).entries());
+    data.fsq_id = crypto.randomUUID();
+
+    // ✅ Fix datetime to UTC ISO string
+    if (data.date_time) {
+        data.date_time = new Date(data.date_time).toISOString();
+    }
+
+    let eventId = null; // To store the event_id for image upload
+
+    try {
+        const address = encodeURIComponent(data.venue_name + " " + (data.venue_address || ""));
+        const osmRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${address}&format=json&limit=1`);
+        const osmData = await osmRes.json();
+        if (osmData.length > 0) {
+            data.venue_lat = parseFloat(osmData[0].lat);
+            data.venue_lon = parseFloat(osmData[0].lon);
+        } else {
+            messageEl.textContent = "Could not find location coordinates";
+            messageEl.classList.add("text-red-600");
+            return;
+        }
+
+        const res = await fetch("http://127.0.0.1:8000/create_event", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await res.json();
+        if (res.ok) {
+            messageEl.textContent = "Event created successfully!";
+            messageEl.classList.add("text-green-600");
+            form.reset();
+            eventId = result.event_id; // Get the created event ID
+
+            // Upload image if selected
+            const imageFile = document.getElementById('eventImageUpload').files[0];
+            if (imageFile && eventId) {
+                const formData = new FormData();
+                formData.append('file', imageFile);
+
+                const uploadRes = await fetch(`${API_BASE}/upload_event_image/${eventId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (uploadRes.ok) {
+                    const uploadResult = await uploadRes.json();
+                    messageEl.textContent += ` Image uploaded: ${uploadResult.url}`;
+                } else {
+                    const uploadError = await uploadRes.json();
+                    messageEl.textContent += ` Image upload failed: ${uploadError.detail || 'Unknown error'}`;
+                    messageEl.classList.remove("text-green-600");
+                    messageEl.classList.add("text-red-600");
+                }
+            }
+            document.getElementById('fileName').textContent = 'No file chosen'; // Reset file name display
+
+        } else {
+            messageEl.textContent = result.detail || "Error creating event";
+            messageEl.classList.add("text-red-600");
+        }
+
+    } catch (err) {
+        messageEl.textContent = "Network or server error";
+        messageEl.classList.add("text-red-600");
+        console.error(err);
+    }
+});
+</script>
+
+</body>
+</html>

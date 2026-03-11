@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Event Preview • Eventium</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <style>
+    :root{
+      --brand:#1a73e8; --border:#e2e2e2; --muted:#666; --bg:#fff; --card:#fafafa; --danger:#d93025; --ok:#137333;
+    }
+    *{box-sizing:border-box;}
+    body{ margin:0; font-family:sans-serif; background:var(--bg); color:#111; }
+    .header{ display:flex; flex-direction:column; align-items:center; border-bottom:1.5px solid var(--border); padding:16px 20px 10px 20px; background:#fff; position:sticky; top:0; z-index:5; }
+    .brand-row{ display:flex; align-items:center; width:100%; justify-content:space-between; gap:12px; }
+    .brand-left{ display:flex; align-items:center; gap:10px; }
+    .logo-img{ width:120px; height:auto; }
+    .brand{ font-size:1.25rem; font-weight:800; letter-spacing:0.2px; }
+    .back-link{ display:inline-flex; align-items:center; gap:8px; text-decoration:none; color:#111; font-weight:600; padding:8px 12px; border:1.5px solid var(--border); border-radius:10px; }
+    .back-link:hover{ border-color:#bbb; }
+    .container{ max-width:1100px; margin:22px auto; padding:0 16px; display:grid; grid-template-columns: 1.5fr 1fr; gap:18px; }
+    .card{ background:#fff; border:1.5px solid var(--border); border-radius:16px; padding:16px; }
+    .title{ font-size:1.35rem; font-weight:800; margin:4px 0 6px 0; }
+    .meta{ color:var(--muted); font-size:0.98rem; }
+    .tags{ margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; }
+    .tag{ background:#e2eaff; color:#1a73e8; border-radius:6px; padding:3px 8px; font-size:0.86rem; }
+    .image{ width:100%; border-radius:14px; border:1.5px solid var(--border); object-fit:cover; max-height:380px; }
+    .section-title{ font-weight:700; margin:14px 0 8px 0; }
+    .desc{ line-height:1.5; }
+    .stats-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .stat{ background:var(--card); border:1.5px solid var(--border); border-radius:12px; padding:12px; }
+    .stat .label{ color:var(--muted); font-size:0.85rem; }
+    .stat .value{ font-weight:800; font-size:1.2rem; }
+    .bar{ height:10px; background:#eee; border-radius:999px; overflow:hidden; margin-top:6px; border:1px solid var(--border); }
+    .bar > span{ display:block; height:100%; background:var(--brand); }
+    .btn{ background:#fff; border:1.5px solid #2b7de9; color:#1a73e8; border-radius:10px; font-weight:700; padding:8px 14px; cursor:pointer; }
+    .btn:hover{ background:#1a73e8; color:#fff; }
+    .btn-danger{ border-color:var(--danger); color:#fff; background:var(--danger);}
+    .btn-danger:hover{ opacity:0.9; }
+    .row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .mapwrap{ margin-top:10px; }
+    #map{ width:100%; height:240px; border:1.5px solid var(--border); border-radius:12px; }
+    .empty{ color:#888; }
+  
+    .charts{ display:flex; gap:16px; align-items:center; justify-content:flex-start; flex-wrap:wrap; margin-top:8px;}
+    canvas{ background:#fff; border:1px solid var(--border); border-radius:12px; padding:8px; }
+    </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="brand-row">
+      <div class="brand-left">
+        <img src="./logo.jpg" alt="logo" class="logo-img" />
+        <div class="brand">Eventium</div>
+      </div>
+      <a class="back-link" href="./dashboard.html"><i class="fa-solid fa-arrow-left"></i> Back to dashboard</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card" id="leftCol">
+      <div id="eventImages" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"></div>
+
+      <h1 class="title" id="eventTitle">Loading…</h1>
+      <div class="meta" id="eventMeta"></div>
+      <div class="tags" id="tags"></div>
+      <h3 class="section-title">About this event</h3>
+      <p class="desc" id="eventDesc"></p>
+      <div class="mapwrap">
+        <div id="map"></div>
+      </div>
+    </section>
+    <aside class="card" id="rightCol">
+      <h3 class="section-title">Stats</h3>
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="label">Attendees</div>
+          <div class="value" id="attendeesValue">—</div>
+          <div class="bar"><span id="attendeesBar" style="width:0%"></span></div>
+        </div>
+        <div class="stat">
+          <div class="label">Capacity</div>
+          <div class="value" id="capacityValue">—</div>
+        </div>
+      </div>
+      <div class="charts">
+        <canvas id="statsChart" width="400" height="220" aria-label="Attendees vs Capacity"></canvas>
+        <canvas id="pieChart" width="220" height="220" aria-label="Occupancy pie"></canvas>
+      </div>
+      <div style="margin-top:14px;" class="row" id="actionsRow">
+        <button class="btn" id="joinBtn">Join</button>
+        <button class="btn btn-danger" id="leaveBtn" style="display:none;">Leave</button>
+      </div>
+      <h3 class="section-title" style="margin-top:18px;">Attendee list</h3>
+      <div id="attendeeList" class="empty">No attendees yet.</div>
+    </aside>
+  </main>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+    const qs = new URLSearchParams(location.search);
+    const eventId = qs.get("id");
+
+    if(!eventId) {
+      document.getElementById("eventTitle").innerText = "Missing event id";
+    }
+
+    const getToken = () => localStorage.getItem("token");
+    const getUserId = () => localStorage.getItem("user_id");
+    const authHeaders = () => { const t = getToken(); return t ? { "Authorization": "Bearer " + t } : {}; }
+
+    async function fetchJSON(url, opts = {}) {
+      const res = await fetch(url, opts);
+      if(!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    async function loadEvent() {
+      const data = await fetchJSON(`${API_BASE}/events/${eventId}`);
+      // Title + meta
+      document.getElementById("eventTitle").innerText = data.title || "Untitled";
+      const when = data.date_time ? new Date(data.date_time).toLocaleString() : "";
+      document.getElementById("eventMeta").innerText = [when, data.venue_name, data.venue_address].filter(Boolean).join(" • ");
+      document.getElementById("eventDesc").innerText = data.description || "";
+      // Images
+const imgWrap = document.getElementById("eventImages");
+imgWrap.innerHTML = '';
+if (data.images && data.images.length > 0) {
+  data.images.forEach(imgData => {
+    const img = document.createElement("img");
+    img.src = imgData.url;
+    img.alt = data.title || "Event Image";
+    img.classList.add("image");
+    img.style.maxHeight = "200px";
+    imgWrap.appendChild(img);
+  });
+} else {
+  imgWrap.innerHTML = `<div class="empty">No images available</div>`;
+}
+
+      // Tags
+      const tags = (data.tags || "").split(",").map(t=>t.trim()).filter(Boolean);
+      const tagWrap = document.getElementById("tags");
+      tagWrap.innerHTML = tags.map(t=>`<span class="tag">${t}</span>`).join("");
+      // Stats
+      const cap = Math.max( (parseInt(data.capacity) || 0), 0 );
+      const att = Math.max( (parseInt(data.attendees) || 0), 0 );
+      document.getElementById("capacityValue").innerText = cap || "—";
+      document.getElementById("attendeesValue").innerText = att || 0;
+      const pct = cap ? Math.min(100, Math.round(att * 100 / cap)) : 0;
+      document.getElementById("attendeesBar").style.width = pct + "%";
+      drawCharts(att, cap);
+
+      // Map
+      if(window.L) {
+        const lat = parseFloat(data.venue_lat);
+        const lon = parseFloat(data.venue_lon);
+        if(!isNaN(lat) && !isNaN(lon)) {
+          const map = L.map('map').setView([lat, lon], 15);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+          L.marker([lat, lon]).addTo(map).bindPopup(data.venue_name || "Event location");
+        } else {
+          document.getElementById("map").outerHTML = "<div class='empty'>No map data available.</div>";
+        }
+      }
+
+      // Enrollment UI
+      await refreshEnrollments();
+      refreshActionButtons();
+    }
+
+    async function refreshEnrollments() {
+      try {
+        const list = await fetchJSON(`${API_BASE}/enrollments/${eventId}`);
+        const wrap = document.getElementById("attendeeList");
+        if(!list.length) { wrap.className = "empty"; wrap.innerText = "No attendees yet."; return; }
+        wrap.className = "";
+        wrap.innerHTML = list.map(r => `<div><i class='fa-solid fa-user'></i> ${r.username}</div>`).join("");
+      } catch(e) {
+        console.error(e);
+      }
+      // also refresh event for attendee count
+      try {
+        const data = await fetchJSON(`${API_BASE}/events/${eventId}`);
+        const cap = Math.max( (parseInt(data.capacity) || 0), 0 );
+        const att = Math.max( (parseInt(data.attendees) || 0), 0 );
+        document.getElementById("capacityValue").innerText = cap || "—";
+        document.getElementById("attendeesValue").innerText = att || 0;
+        const pct = cap ? Math.min(100, Math.round(att * 100 / cap)) : 0;
+        document.getElementById("attendeesBar").style.width = pct + "%";
+      drawCharts(att, cap);
+      } catch(_) { }
+    }
+
+    function refreshActionButtons(){
+      const uid = getUserId();
+      const joinBtn = document.getElementById("joinBtn");
+      const leaveBtn = document.getElementById("leaveBtn");
+      if(!uid) {
+        joinBtn.style.display = "inline-block";
+        leaveBtn.style.display = "none";
+        joinBtn.onclick = ()=> alert("Please sign in first.");
+        return;
+      }
+      // Determine if user already joined by checking enrollments
+      fetchJSON(`${API_BASE}/enrollments/${eventId}`).then(list=>{
+        const isJoined = list.some(r => String(r.user_id) === String(uid));
+        joinBtn.style.display = isJoined ? "none" : "inline-block";
+        leaveBtn.style.display = isJoined ? "inline-block" : "none";
+      }).catch(()=>{});
+
+      joinBtn.onclick = async () => {
+        try {
+          const res = await fetch(`${API_BASE}/enroll/${eventId}?user_id=${uid}`, { method:"POST", headers: authHeaders() });
+          if(res.ok) { await refreshEnrollments(); refreshActionButtons(); }
+          else { const d = await res.json().catch(()=>({})); alert(d.detail || "Failed to join"); }
+        } catch(e){ console.error(e); }
+      };
+
+      leaveBtn.onclick = async () => {
+        try {
+          const res = await fetch(`${API_BASE}/unenroll/${eventId}?user_id=${uid}`, { method:"DELETE", headers: authHeaders() });
+          if(res.ok) { await refreshEnrollments(); refreshActionButtons(); }
+          else { const d = await res.json().catch(()=>({})); alert(d.detail || "Failed to leave"); }
+        } catch(e){ console.error(e); }
+      };
+    }
+
+    
+    // Simple chart rendering without external libs
+    function drawCharts(att, cap){
+      const a = Math.max(0, att|0), c = Math.max(0, cap|0);
+      // Bar chart
+      try{
+        const ctx = document.getElementById('statsChart').getContext('2d');
+        const w = ctx.canvas.width, h = ctx.canvas.height;
+        ctx.clearRect(0,0,w,h);
+        const pad = 30;
+        const maxV = Math.max(c, a, 1);
+        // axes
+        ctx.lineWidth = 1; ctx.strokeStyle = '#888'; ctx.beginPath();
+        ctx.moveTo(pad, pad); ctx.lineTo(pad, h-pad); ctx.lineTo(w-pad, h-pad); ctx.stroke();
+        const bw = 50, gap = 40;
+        const scale = (h - pad*2) / maxV;
+        // bars
+        const vals = [a, c];
+        const labels = ['Attendees','Capacity'];
+        const x0 = pad + 30;
+        for(let i=0;i<vals.length;i++){
+          const x = x0 + i*(bw+gap);
+          const bh = vals[i]*scale;
+          ctx.fillStyle = i===0 ? '#1a73e8' : '#137333';
+          ctx.fillRect(x, h-pad-bh, bw, bh);
+          ctx.fillStyle = '#111'; ctx.font = '12px sans-serif';
+          ctx.fillText(labels[i], x-6, h-pad+14);
+          ctx.fillText(String(vals[i]), x+12, h-pad-bh-6);
+        }
+      }catch(e){}
+      // Pie chart occupancy
+      try{
+        const p = document.getElementById('pieChart').getContext('2d');
+        const w = p.canvas.width, h = p.canvas.height, r = Math.min(w,h)/2 - 12;
+        p.clearRect(0,0,w,h);
+        const cx = w/2, cy = h/2;
+        const occ = c>0 ? Math.min(1, a/c) : 0;
+        // occupied slice
+        p.beginPath(); p.moveTo(cx,cy); p.fillStyle = '#1a73e8';
+        p.arc(cx,cy,r, -Math.PI/2, -Math.PI/2 + occ*2*Math.PI); p.closePath(); p.fill();
+        // remaining slice
+        p.beginPath(); p.moveTo(cx,cy); p.fillStyle = '#e2e2e2';
+        p.arc(cx,cy,r, -Math.PI/2 + occ*2*Math.PI, -Math.PI/2 + 2*Math.PI); p.closePath(); p.fill();
+        // text
+        p.fillStyle = '#111'; p.font='14px sans-serif'; p.textAlign='center';
+        p.fillText(Math.round(occ*100)+'% full', cx, cy);
+      }catch(e){}
+    }
+
+    loadEvent().catch(err => {
+      console.error(err);
+      document.getElementById("eventTitle").innerText = "Failed to load event";
+    });
+  </script>
+</body>
+</html>

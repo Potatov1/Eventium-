@@ -112,4 +112,6 @@ This project is released for learning and experimentation purposes.
 
 ## Author
 
-Built by Potatov1
+Built by Potatov1 in collaboration with yatharth1501
+
+(thx thr GOAT for the front end and helping in backend debug and integration)
